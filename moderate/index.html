@@ -185,7 +185,7 @@ function card(post) {
   const meta = document.createElement("div");
   meta.className = "meta";
   const when = post.createdAt ? new Date(post.createdAt).toLocaleString() : "";
-  for (const text of [KINDS[post.kind] ?? post.kind, post.handle, when, post.reports ? `${post.reports} reports` : ""]) {
+  for (const text of [KINDS[post.kind] ?? post.kind, post.handle, when, post.reports ? `${post.reports} ${post.reports === 1 ? "report" : "reports"}` : ""]) {
     if (!text) continue;
     const s = document.createElement("span");
     s.textContent = text;
