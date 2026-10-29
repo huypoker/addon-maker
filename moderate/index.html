@@ -10,7 +10,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 button:disabled{opacity:.5;cursor:default}
 button.go{background:var(--accent);color:#062A14;border-color:#1E8A4C}
 button.stop{background:#E5484D;color:#fff;border-color:#8f2427}
-.tabs{display:flex;gap:0;margin:16px 0}
+.tabs{display:flex;flex-wrap:wrap;gap:0;margin:16px 0}
 .tabs button[aria-pressed="true"]{background:var(--gold);color:#2B1D00;border-color:#B08420}
 .count{font:14px "Noto Sans",sans-serif;color:inherit;opacity:.8;margin-left:6px}
 .post{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:start}
@@ -50,6 +50,7 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
 <div class="tabs" role="group" aria-label="Which posts">
 <button id="tab-pending" type="button" aria-pressed="true">Waiting for review<span class="count" id="count-pending"></span></button>
 <button id="tab-reports" type="button" aria-pressed="false">Reported<span class="count" id="count-reports"></span></button>
+<button id="tab-published" type="button" aria-pressed="false">Published<span class="count" id="count-published"></span></button>
 </div>
 <div style="display:flex;gap:8px"><button id="refresh" type="button">Refresh</button><button id="sign-out" type="button">Sign out</button></div>
 </div>
@@ -246,8 +247,10 @@ function card(post) {
   actions.className = "actions";
   if (view === "pending") {
     actions.append(actionButton("Approve", "go", "approve", post, el), actionButton("Reject", "", "reject", post, el));
-  } else {
+  } else if (view === "reports") {
     actions.append(actionButton("Remove", "stop", "remove", post, el), actionButton("Keep", "go", "keep", post, el));
+  } else {
+    actions.append(actionButton("Remove", "stop", "remove", post, el));
   }
   actions.append(actionButton("Ban author", "", "ban", post, el));
   el.append(body, actions);
@@ -264,11 +267,12 @@ async function load(showLoading = true) {
   const list = $("list");
   if (showLoading) list.innerHTML = '<p class="empty">Loading posts…</p>';
   try {
-    const [pending, reports] = await Promise.all([count("pending"), count("reports")]);
-    const posts = view === "pending" ? pending : reports;
+    const [pending, reports, published] = await Promise.all([count("pending"), count("reports"), count("published")]);
+    const posts = { pending, reports, published }[view];
     list.replaceChildren(...posts.map(card));
     if (!posts.length) {
-      list.innerHTML = `<p class="empty">${view === "pending" ? "No posts are waiting for review." : "No open reports."}</p>`;
+      const empty = { pending: "No posts are waiting for review.", reports: "No open reports.", published: "Nothing is showing in the app yet." };
+      list.innerHTML = `<p class="empty">${empty[view]}</p>`;
     }
   } catch (e) {
     list.innerHTML = "";
@@ -281,13 +285,13 @@ async function load(showLoading = true) {
 
 function setView(next) {
   view = next;
-  $("tab-pending").setAttribute("aria-pressed", next === "pending");
-  $("tab-reports").setAttribute("aria-pressed", next === "reports");
+  for (const tab of ["pending", "reports", "published"]) $(`tab-${tab}`).setAttribute("aria-pressed", next === tab);
   load();
 }
 
 $("tab-pending").addEventListener("click", () => setView("pending"));
 $("tab-reports").addEventListener("click", () => setView("reports"));
+$("tab-published").addEventListener("click", () => setView("published"));
 $("refresh").addEventListener("click", () => load());
 $("sign-out").addEventListener("click", () => signOut(auth));
 $("sign-in").addEventListener("click", async () => {
