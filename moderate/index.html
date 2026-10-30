@@ -151,8 +151,11 @@ function preview(post) {
       box.append(canvas(cells, 64, 4, "skin texture"));
     } else if (kind === "texturePack") {
       // 16×16 grids, or 8×8 from packs made before 16×16 painting.
+      // The server only accepts these two sizes; anything else is not drawn.
+      const SIDES = { 64: 8, 256: 16 };
       for (const [slot, grid] of Object.entries(data.edits)) {
-        const side = Math.round(Math.sqrt(grid.length));
+        const side = SIDES[grid.length];
+        if (!side) throw new Error(`unexpected texture size ${grid.length}`);
         box.append(canvas(grid, side, 80 / side, slot));
       }
     } else if (kind === "structure") {
