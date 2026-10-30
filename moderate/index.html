@@ -160,6 +160,9 @@ function preview(post) {
         if (!side) throw new Error(`unexpected layer size ${layer.length}`);
         // Empty layers above the build say nothing; skip them.
         if (layer.every((b) => b === null)) return;
+        // A block this page does not know yet would look like air: show the
+        // warning instead of a build with holes someone might approve.
+        if (layer.some((b) => b && !Object.hasOwn(BLOCKS, b))) throw new Error("unknown block");
         box.append(canvas(layer.map((b) => (b ? BLOCKS[b] : null)), side, 80 / side, `layer ${i + 1}`));
       });
     } else if (kind === "addon") {
