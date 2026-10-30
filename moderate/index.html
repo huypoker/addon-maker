@@ -86,7 +86,8 @@ let view = "pending";
 
 const REASONS = { unkind: "Unkind", not_for_kids: "Not for kids", copied: "Copied", spam: "Spam" };
 const KINDS = { skin: "Skin", addon: "Addon", texturePack: "Texture pack", structure: "Structure" };
-const BLOCKS = { stone: 0xff7d7d84, planks: 0xffa0703f, glass: 0xffcfe8f2, leaves: 0xff3e7a34 };
+// Colours from StructureBlock in the app's structure_model.dart.
+const BLOCKS = { stone: 0xff7d7d84, planks: 0xffa0703f, glass: 0xffcfe8f2, leaves: 0xff3e7a34, cobblestone: 0xff8a8a8a, bricks: 0xff96503c, log: 0xff6b5132, wool: 0xffe9ecec, glowstone: 0xfff5d76e };
 // Stat names from the app's addon_template.dart.
 const ADDON_VALUES = { weapon: ["Damage", "Durability"], pet: ["Health", "Speed"], food: ["Nutrition", "Saturation"], block: ["Hardness", "Light"] };
 // Template icons, used when the author did not draw their own: 1 main, 2 accent.
@@ -152,7 +153,18 @@ function preview(post) {
     } else if (kind === "texturePack") {
       for (const [slot, grid] of Object.entries(data.edits)) box.append(canvas(grid, 8, 10, slot));
     } else if (kind === "structure") {
-      data.layers.forEach((layer, i) => box.append(canvas(layer.map((b) => (b ? BLOCKS[b] : null)), 8, 10, `layer ${i + 1}`)));
+      // 12×12 layers, or 8×8 from structures made before; the server accepts no other size.
+      const SIDES = { 64: 8, 144: 12 };
+      data.layers.forEach((layer, i) => {
+        const side = SIDES[layer.length];
+        if (!side) throw new Error(`unexpected layer size ${layer.length}`);
+        // Empty layers above the build say nothing; skip them.
+        if (layer.every((b) => b === null)) return;
+        // A block this page does not know yet would look like air: show the
+        // warning instead of a build with holes someone might approve.
+        if (layer.some((b) => b && !Object.hasOwn(BLOCKS, b))) throw new Error("unknown block");
+        box.append(canvas(layer.map((b) => (b ? BLOCKS[b] : null)), side, 80 / side, `layer ${i + 1}`));
+      });
     } else if (kind === "addon") {
       const labels = ADDON_VALUES[data.template] ?? ["Value 1", "Value 2"];
       const rows = data.icon ?? ADDON_ICONS[data.template];
