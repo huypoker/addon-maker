@@ -155,7 +155,11 @@ function preview(post) {
     } else if (kind === "structure") {
       data.layers.forEach((layer, i) => box.append(canvas(layer.map((b) => (b ? BLOCKS[b] : null)), 8, 10, `layer ${i + 1}`)));
     } else if (kind === "addon") {
-      const labels = ADDON_VALUES[data.template] ?? ["Value 1", "Value 2"];
+      // A template or power this page does not know yet: show the warning
+      // rather than a half-drawn preview someone might approve.
+      if (!Object.hasOwn(ADDON_VALUES, data.template)) throw new Error("unknown template");
+      if (data.ability && !Object.hasOwn(ABILITY_LABELS, data.ability)) throw new Error("unknown power");
+      const labels = ADDON_VALUES[data.template];
       const rows = data.icon ?? ADDON_ICONS[data.template];
       if (rows) {
         const cells = rows.join("").split("").map((ch) => (ch === "1" ? data.mainColour : ch === "2" ? data.accentColour : null));
@@ -178,7 +182,7 @@ function preview(post) {
         row.textContent = `${label}: ${text}`;
         info.append(row);
       };
-      line("Power", data.ability ? ABILITY_LABELS[data.ability] ?? data.ability : "none");
+      line("Power", data.ability ? ABILITY_LABELS[data.ability] : "none");
       if (data.template === "pet") {
         line("Tamed with", craftLabel(data.tame ?? "bone"));
       } else if (data.recipe) {
