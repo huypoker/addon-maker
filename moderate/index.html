@@ -88,16 +88,17 @@ const REASONS = { unkind: "Unkind", not_for_kids: "Not for kids", copied: "Copie
 const KINDS = { skin: "Skin", addon: "Addon", texturePack: "Texture pack", structure: "Structure" };
 const BLOCKS = { stone: 0xff7d7d84, planks: 0xffa0703f, glass: 0xffcfe8f2, leaves: 0xff3e7a34 };
 // Stat names from the app's addon_template.dart.
-const ADDON_VALUES = { weapon: ["Damage", "Durability"], pet: ["Health", "Speed"], food: ["Nutrition", "Saturation"], block: ["Hardness", "Light"] };
+const ADDON_VALUES = { weapon: ["Damage", "Durability"], pet: ["Health", "Speed"], food: ["Nutrition", "Saturation"], block: ["Hardness", "Light"], tool: ["Mining speed", "Durability"] };
 // Template icons, used when the author did not draw their own: 1 main, 2 accent.
 const ADDON_ICONS = {
   weapon: ["......11", ".....121", "....121.", "...121..", "2.121...", ".22.....", ".22.....", "2..2...."],
   pet: ["........", ".11..11.", ".111111.", "11211211", "11111111", ".111111.", ".1.11.1.", "........"],
   food: ["....2...", "...2....", ".111111.", "11111111", "11111111", "11111111", ".111111.", "..1111.."],
   block: ["11111111", "12111121", "11112111", "11211111", "11111211", "12111111", "11112121", "11111111"],
+  tool: [".1111...", "....11..", "....211.", "...2..1.", "..2...1.", ".2......", "2.......", "........"],
 };
 // Names from AddonAbility and CraftItem in addon_template.dart.
-const ABILITY_LABELS = { freeze: "Freeze", poison: "Poison", fire: "Fire", launch: "Launch", speed: "Speed", jump: "Jump", nightVision: "Night vision", healing: "Healing", waterBreathing: "Water breathing", guard: "Guard", fireproof: "Fireproof", swimmer: "Swimmer", blastProof: "Blast-proof", seeThrough: "See-through", burns: "Burns" };
+const ABILITY_LABELS = { freeze: "Freeze", poison: "Poison", fire: "Fire", launch: "Launch", speed: "Speed", jump: "Jump", nightVision: "Night vision", healing: "Healing", waterBreathing: "Water breathing", guard: "Guard", fireproof: "Fireproof", swimmer: "Swimmer", rush: "Rush", lantern: "Lantern", blastProof: "Blast-proof", seeThrough: "See-through", burns: "Burns" };
 const craftLabel = (name) => name.replace(/([A-Z])/g, " $1").toLowerCase();
 
 function toast(text, error = false) {
@@ -154,7 +155,11 @@ function preview(post) {
     } else if (kind === "structure") {
       data.layers.forEach((layer, i) => box.append(canvas(layer.map((b) => (b ? BLOCKS[b] : null)), 8, 10, `layer ${i + 1}`)));
     } else if (kind === "addon") {
-      const labels = ADDON_VALUES[data.template] ?? ["Value 1", "Value 2"];
+      // A template or power this page does not know yet: show the warning
+      // rather than a half-drawn preview someone might approve.
+      if (!Object.hasOwn(ADDON_VALUES, data.template)) throw new Error("unknown template");
+      if (data.ability && !Object.hasOwn(ABILITY_LABELS, data.ability)) throw new Error("unknown power");
+      const labels = ADDON_VALUES[data.template];
       const rows = data.icon ?? ADDON_ICONS[data.template];
       if (rows) {
         const cells = rows.join("").split("").map((ch) => (ch === "1" ? data.mainColour : ch === "2" ? data.accentColour : null));
@@ -177,7 +182,7 @@ function preview(post) {
         row.textContent = `${label}: ${text}`;
         info.append(row);
       };
-      line("Power", data.ability ? ABILITY_LABELS[data.ability] ?? data.ability : "none");
+      line("Power", data.ability ? ABILITY_LABELS[data.ability] : "none");
       if (data.template === "pet") {
         line("Tamed with", craftLabel(data.tame ?? "bone"));
       } else if (data.recipe) {
